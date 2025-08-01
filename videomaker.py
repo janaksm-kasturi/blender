@@ -104,7 +104,8 @@ def get_vid_date_taken(image_path):
                 datetime_object = datetime_object.replace(tzinfo=tz.gettz('UTC'))
             elif hasattr(track, 'encoded_date') and track.encoded_date is not None:
                 datetime_object = datetime.strptime(track.encoded_date, utc_date_time_format_string)
-                datetime_object = datetime_object.replace(tzinfo=tz.gettz('UTC'))
+                if image_path.find("PXL_") != -1:
+                    datetime_object = datetime_object.replace(tzinfo=tz.gettz('UTC'))
             elif hasattr(track, 'tagged_date') and track.tagged_date is not None:
                 datetime_object = datetime.strptime(track.tagged_date, utc_date_time_format_string)
                 datetime_object = datetime_object.replace(tzinfo=tz.gettz('UTC'))
