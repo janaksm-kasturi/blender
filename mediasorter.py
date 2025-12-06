@@ -111,6 +111,7 @@ def get_vid_date_taken(image_path):
 def get_sorted_media_files(folder_path):
      
     image_files = []
+    edited_files = []
     for f in os.listdir(folder_path):
         full_path = os.path.join(folder_path, f)
         if not os.path.isfile(full_path ):
@@ -119,6 +120,9 @@ def get_sorted_media_files(folder_path):
         image_file = {}
         image_file['path'] = os.path.join(folder_path, f)
         image_file['name'] = f
+        if f.find(" Trim") != -1 or f.find(" Copy") != -1:
+            edited_files.append(f)
+            continue
         if f.lower().endswith(('.mov','mp4')):
             image_file['is_vid'] = True
             image_file.update(get_vid_date_taken(image_file['path'] ))
@@ -134,15 +138,22 @@ def get_sorted_media_files(folder_path):
         
         if 'taken_date' in image_file :
             image_files.append(image_file)
-    
+
+    for image_file in image_files:
+        for edited_file in edited_files:
+            if edited_file.rpartition(".")[0].find(image_file["name"].rpartition(".")[0]) != -1 :
+                image_file["path"] = image_file["path"].replace(image_file["name"].rpartition(".")[0] , edited_file.rpartition(".")[0])
+                image_file["name"] = edited_file
+                break
+
     
     sorted_imgs_by_time_created = sorted(image_files, key=lambda p: p['taken_date'])
 
     return sorted_imgs_by_time_created 
 
-image_folder = r"D:\pics\north-cal\Thursday-071725" 
+image_folder = r"D:\videos\joshua-tree\immich" 
 media_files = get_sorted_media_files(image_folder)
 for i, media_obj in enumerate(media_files):
 #        if i > 50:
 #            break
-        print(f"{media_obj['name']} , {media_obj['taken_date']} ")
+        print(f"{media_obj['path']} , {media_obj['taken_date']} ")

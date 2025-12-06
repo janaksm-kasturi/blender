@@ -20,6 +20,7 @@ import subprocess
 import json
 
 # Register HEIC opener
+
 register_heif_opener()
 
 utc_date_time_format_string = "%Y-%m-%d %H:%M:%S UTC"
@@ -56,6 +57,8 @@ def get_exif_data(image_path):
 
 def get_img_date_taken(image_path):
     """Retrieves the 'DateTimeOriginal' from EXIF data."""
+    # if image_path.endswith('PXL_20250717_231347155_exported_5950~2.jpg'):
+    #         print("break")
     exif = get_exif_data(image_path)
     if exif and 'DateTimeOriginal' in exif:
         datetime_object = datetime.strptime( exif['DateTimeOriginal'], utc_date_time_format_string3)
@@ -89,7 +92,7 @@ def get_vid_date_taken(image_path):
     media_info = MediaInfo.parse(image_path)
     vid_meta = {}
     for track in media_info.tracks:
-        # if image_path.endswith('IMG_0219.MOV'):
+        # if image_path.endswith('PXL_20250717_231347155~2.mp4'):
         #     print("break")
        
         if track.track_type == "Video":
@@ -119,6 +122,7 @@ def get_vid_date_taken(image_path):
 def get_sorted_media_files(folder_path):
      
     image_files = []
+    edited_files = []
     for f in os.listdir(folder_path):
         full_path = os.path.join(folder_path, f)
         if not os.path.isfile(full_path ):
@@ -127,6 +131,9 @@ def get_sorted_media_files(folder_path):
         image_file = {}
         image_file['path'] = os.path.join(folder_path, f)
         image_file['name'] = f
+        if f.find(" Trim") != -1 or f.find(" Copy") != -1:
+            edited_files.append(f)
+            continue
         if f.lower().endswith(('.mov','mp4')):
             image_file['is_vid'] = True
             image_file.update(get_vid_date_taken(image_file['path'] ))
@@ -142,7 +149,14 @@ def get_sorted_media_files(folder_path):
         
         if 'taken_date' in image_file :
             image_files.append(image_file)
-    
+
+    for image_file in image_files:
+        for edited_file in edited_files:
+            if edited_file.rpartition(".")[0].find(image_file["name"].rpartition(".")[0]) != -1 :
+                image_file["path"] = image_file["path"].replace(image_file["name"].rpartition(".")[0] , edited_file.rpartition(".")[0])
+                image_file["name"] = edited_file
+                break
+
     
     sorted_imgs_by_time_created = sorted(image_files, key=lambda p: p['taken_date'])
 
@@ -247,8 +261,8 @@ def add_images_to_sequence_editor(folder_path):
         )
 
 
-image_folder = r"D:\pics\north-cal\Thursday-071725" 
-background_sound = r"D:\pics\north-cal\sound\fsm-team-escp-chill-hop-vol-1.mp3" 
+image_folder = r"D:\videos\joshua-tree\immich" 
+background_sound = r"D:\videos\joshua-tree\sound\alexander-nakarada-catalyst.mp3" 
 video_fps = 30
 img_frame_duration = video_fps * 4 
 fade_duration = video_fps * 1
