@@ -7,14 +7,10 @@ from datetime import datetime
 from dateutil import tz
 import subprocess
 import json
-
+from dateutil import parser
 
 # Register HEIC opener
 register_heif_opener()
-
-utc_date_time_format_string = "%Y-%m-%d %H:%M:%S UTC"
-utc_date_time_format_string2 = "%Y-%m-%d %H:%M:%S.%f UTC"
-utc_date_time_format_string3 = "%Y:%m:%d %H:%M:%S"
 
 def convert_heic_to_jpg(heic_path):
     base_name = os.path.splitext(os.path.basename(heic_path))[0]
@@ -45,12 +41,13 @@ def get_exif_data(image_path):
     return None
 
 def get_img_date_taken(image_path):
+    print(image_path)
     """Retrieves the 'DateTimeOriginal' from EXIF data."""
     # if image_path.endswith('PXL_20250717_231347155_exported_5950~2.jpg'):
     #         print("break")
     exif = get_exif_data(image_path)
     if exif and 'DateTimeOriginal' in exif:
-        datetime_object = datetime.strptime( exif['DateTimeOriginal'], utc_date_time_format_string3)
+        datetime_object = parser.parse( exif['DateTimeOriginal'])
         time_taken =   datetime_object.replace(tzinfo=tz.gettz('America/Los_Angeles'))
         img_meta = {}
         img_meta['widthx'] = exif['widthx']
@@ -66,7 +63,7 @@ def get_heic_date_taken(heic_filepath):
     output = subprocess.check_output(cmd).decode("utf-8")
     metadata = json.loads(output)
     if metadata and metadata[0].get('DateTimeOriginal'):
-        datetime_object = datetime.strptime(metadata[0]['DateTimeOriginal'], utc_date_time_format_string3)
+        datetime_object =parser.parse(metadata[0]['DateTimeOriginal'])
         time_taken = datetime_object.replace(tzinfo=tz.gettz('America/Los_Angeles'))
         img_meta = {}
         img_meta['widthx'] = metadata[0]['ImageWidth']
@@ -92,17 +89,17 @@ def get_vid_date_taken(image_path):
             if hasattr(track, 'comapplequicktimecreationdate') and track.comapplequicktimecreationdate is not None:
                 datetime_object = datetime.fromisoformat(track.comapplequicktimecreationdate)
             elif hasattr(track, 'recorded_date') and track.recorded_date is not None:
-                datetime_object = datetime.strptime(track.recorded_date, utc_date_time_format_string)
+                datetime_object = parser.parse(track.recorded_date)
                 datetime_object = datetime_object.replace(tzinfo=tz.gettz('UTC'))
             elif hasattr(track, 'encoded_date') and track.encoded_date is not None:
-                datetime_object = datetime.strptime(track.encoded_date, utc_date_time_format_string)
+                datetime_object = parser.parse(track.encoded_date)
                 if image_path.find("PXL_") != -1:
                     datetime_object = datetime_object.replace(tzinfo=tz.gettz('UTC'))
             elif hasattr(track, 'tagged_date') and track.tagged_date is not None:
-                datetime_object = datetime.strptime(track.tagged_date, utc_date_time_format_string)
+                datetime_object = parser.parse(track.tagged_date)
                 datetime_object = datetime_object.replace(tzinfo=tz.gettz('UTC'))
             else:             
-                datetime_object = datetime.strptime(track.file_creation_date , utc_date_time_format_string2)
+                datetime_object = parser.parse(track.file_creation_date )
                 datetime_object = datetime_object.replace(tzinfo=tz.gettz('UTC'))
             vid_meta['taken_date'] = datetime_object.astimezone(tz.gettz('America/Los_Angeles'))
     return vid_meta
@@ -129,7 +126,9 @@ def get_sorted_media_files(folder_path):
         
         if f.lower().endswith(('.png', '.jpg', '.jpeg', '.gif', '.bmp', '.tiff')):
             image_file['is_vid'] = False
-            image_file.update(get_img_date_taken(image_file['path'] )) 
+            date_taken = get_img_date_taken(image_file['path'])
+            if date_taken is not None:
+                image_file.update(date_taken) 
 
         if f.lower().endswith(('heic')):
             image_file['is_vid'] = False
@@ -151,7 +150,7 @@ def get_sorted_media_files(folder_path):
 
     return sorted_imgs_by_time_created 
 
-image_folder = r"D:\videos\joshua-tree\immich" 
+image_folder = r"D:\videos\KartikaiDipam\immich-20251205_203701" 
 media_files = get_sorted_media_files(image_folder)
 for i, media_obj in enumerate(media_files):
 #        if i > 50:
